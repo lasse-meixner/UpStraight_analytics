@@ -1,0 +1,3 @@
+[submodule "apple_watch_data_package"]
+	path = apple_watch_data_package
+	url = https://github.com/lasse-meixner/apple_watch_data_package.git
