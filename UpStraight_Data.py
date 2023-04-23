@@ -29,7 +29,7 @@ def preprocess(data_export):
     return data_export
 
 def get_appData(path = "../data/", save = False):
-    df = pd.concat([pd.read_csv(f"{path}{f}").assign(source = f.split(".")[0].split("_")[1]) for f in os.listdir("../data") if f.startswith("export_")])
+    df = pd.concat([pd.read_csv(f"{path}{f}").assign(source = f.split(".")[0].split("_")[1]) for f in os.listdir(path) if f.startswith("export_")])
     # can preprocess concatenated file since no step depends on individual data
     df = preprocess(df)
     if save:
@@ -41,7 +41,7 @@ def get_health_data(path = "../data/", save = False):
     health = pd.concat([
         fill_stand_time(
         light_preprocess(
-            pd.read_csv(f"{path}{f}").assign(source = f.split(".")[0].split("_")[2]))) for f in os.listdir("../data") if f.startswith("health_filtered_")])
+            pd.read_csv(f"{path}{f}").assign(source = f.split(".")[0].split("_")[2]))) for f in os.listdir(path) if f.startswith("health_filtered_")])
     if save:
         health.to_csv("../data/health.csv",index=False)
     return health
