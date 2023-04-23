@@ -1,0 +1,11 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-arm64
+
+dash=2.9.3
+pandas=1.5.2
+plotly=5.14.1
+dash-core-components=2.0.0
+dash-html-components=2.0.0
+random
+matplotlib
