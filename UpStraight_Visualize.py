@@ -2,10 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 
+import plotly.graph_objects as go
 
-def plot_day(appData,health,column,day):
-    health_day = health[health["day"]==day]
-    appData_day = appData[appData["day"]==day].reset_index(drop=True)
+
+def plot_day(appData,health,column,entry):
+    day = appData.groupby("day_date").count().sort_values("date",ascending=False).index[entry]
+    health_day = health[health["day_date"]==day]
+    appData_day = appData[appData["day_date"]==day].reset_index(drop=True)
 
     ss = health_day[health_day["type"]==column]
     
@@ -20,5 +23,27 @@ def plot_day(appData,health,column,day):
         plt.axvline(x=appData_day.iloc[i].date,color=color,linestyle=line_style)
         plt.annotate(appData_day.iloc[i].state_string,xy=(appData_day.iloc[i].date,random.uniform(ss.value.min(),ss.value.max())))
         
-    plt.title(column)
+    plt.title(column + " on " + str(day))
     plt.show()
+
+def plot_day_plotly(appData,health,column,entry):
+    """same as above but using plotly library"""
+    day = appData.groupby("day_date").count().sort_values("date",ascending=False).index[entry-1]
+    health_day = health[health["day_date"]==day]
+    appData_day = appData[appData["day_date"]==day].reset_index(drop=True)
+
+    ss = health_day[health_day["type"]==column]
+    
+    # baseline plot with health data
+    f = go.Figure()
+    f.add_trace(go.Scatter(x=ss.start,y=ss.value,mode="markers",name=column))
+    
+    # add vertical lines for appData and annotate
+    for i in range(len(appData_day)):
+        color = "red" if appData_day.iloc[i].state == 1 else "black" if appData_day.iloc[i].state==-1 else "blue"
+        line_style = "solid" if appData_day.iloc[i].posture == 1 else "dashdot"
+        f.add_vline(x=appData_day.iloc[i].date,line_width=2,line_dash=line_style,line_color=color)
+        f.add_annotation(x=appData_day.iloc[i].date,y=random.uniform(ss.value.min(),ss.value.max()),text=appData_day.iloc[i].state_string)
+        
+    f.update_layout(title=column + " on " + str(day))
+    return f
