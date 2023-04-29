@@ -5,11 +5,8 @@ from dash.dependencies import Input, Output
 from dash import html, dcc
 import plotly.express as px
 import pandas as pd
-import numpy as np
-import random
-import os
 
-from UpStraight_Data import get_appData, get_health_data, feature_columns
+from UpStraight_Data import feature_columns
 from UpStraight_Visualize import plot_day_plotly
 
 
