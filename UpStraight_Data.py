@@ -29,7 +29,7 @@ training_columns = ['hour', 'HeartRate_15_mean',
                     'HeartRate_30_ar1_coef', 'ActiveEnergyBurned_30_ar1_coef']
 
 
-def preprocess(data_export):
+def preprocess_appData(data_export):
     """Auxiliary function to preprocess the appData.
 
     Args:
@@ -48,61 +48,97 @@ def preprocess(data_export):
     return data_export
 
 def get_appData(path = "../data/", save = False):
+    """Auxiliary function to load, merge and preprocess the appData for separate analysis.
+
+    Args:
+        path (str, optional): path. Defaults to "../data/".
+        save (bool, optional): flag, whether to save to appData.csv in local directory. Defaults to False.
+
+    Returns:
+        df: df
+    """
     df = pd.concat([pd.read_csv(f"{path}{f}").assign(source = f.split(".")[0].split("_")[1]) for f in os.listdir(path) if f.startswith("export_")])
     # can preprocess concatenated file since no step depends on individual data
-    df = preprocess(df)
+    df = preprocess_appData(df)
     if save:
-        df.to_csv("../data/appData.csv",index=False)
+        df.to_csv(path  + "appData.csv",index=False)
     return df
 
 def get_health_data(path = "../data/", save = False):
+    """Auxiliary function to load, merge and preprocess the health data for separate analysis.
+
+    Args:
+        path (str, optional): path. Defaults to "../data/".
+        save (bool, optional): flag, whether to save to health.csv in local directory. Defaults to False.
+
+    Returns:
+        df: df
+    """
     # load and light preprocess each health data file separately
     health = pd.concat([
         fill_stand_time(
         light_preprocess(
             pd.read_csv(f"{path}{f}").assign(source = f.split(".")[0].split("_")[2]))) for f in os.listdir(path) if f.startswith("health_filtered_")])
     if save:
-        health.to_csv("../data/health.csv",index=False)
+        health.to_csv(path + "health.csv",index=False)
     return health
 
-def get_training_data(path = "../data/", save = False):
+def build_training_data(path = "../data/", save = False):
+    """Stand alone function to build training data from the appData and health data from pairs of user files.
+
+    Args:
+        path (str, optional): path. Defaults to "../data/".
+        save (bool, optional): flag, whether to save to X_train.csv in local directory. Defaults to False.
+
+    Returns:
+        df: df
+    """
     # for each user, loop over app data export, build feature from health, and combine
     X_train = pd.DataFrame()
 
     for f in os.listdir(path):
         if f.startswith("export_"):
             user = f.split(".")[0].split("_")[1]
-            appData = preprocess(pd.read_csv(f"{path}{f}").assign(source = user))
+            appData = preprocess_appData(pd.read_csv(f"{path}{f}").assign(source = user))
             health = fill_stand_time(light_preprocess(pd.read_csv(f"{path}health_filtered_{user}.csv")))
             health = health[health["type"].isin(feature_columns)]
-            X = build_features(appData,health)
-            X_train = pd.concat([X_train,X])      
+            X = build_features(appData,health) # get appData_p with features based on that persons health data
+            X_train = pd.concat([X_train,X]) # combined all users
     if save:
-        X_train.to_csv("../data/X_train.csv",index=False)
+        X_train.to_csv(path + "X_train.csv",index=False)
     return X_train
 
-def build_features(appData,health):
+def build_features(appData_p,health_p):
+    """Auxiliary function to build features from appData and health data (of each user: _p) and add them as new columns to appData_p.
+
+    Args:
+        appData_p (df): df of appData for one user
+        health_p (df): df of health data for one user
+
+    Returns:
+        df: appData_p with added feature columns
+    """
     # drop unavailable entries
-    appData = appData[appData["state"]>-1].reset_index(drop=True)
+    appData_p = appData_p[appData_p["state"]>-1].reset_index(drop=True)
 
     # build features
     # 1: for each entry in the appData, get the mean, max, min, std, and range of the 'column' type of health data for the interval before the notification.
     # 2: for HeartRate and ActiveEnergyBurned, fit an AR(1) process to the data and get the coefficient.
-    for i in tqdm(range(len(appData))):
+    for i in tqdm(range(len(appData_p))):
         for interval in [15,30]:
-            start_time = appData.loc[i,"date"] - pd.Timedelta(minutes=interval)
-            end_time = appData.loc[i,"date"]
-            health_subset = health[(health["start"] >= start_time) & (health["end"] <= end_time)] # NOTE: This part is expensive.
-            build_simple_interval_features(appData,health_subset,i,interval,column="HeartRate")
-            build_simple_interval_features(appData,health_subset,i,interval,column="ActiveEnergyBurned")
-            build_simple_interval_features(appData,health_subset,i,interval,column="AppleStandTime")
-            fit_ar1_process(appData,health_subset,i,interval,column="HeartRate")
-            fit_ar1_process(appData,health_subset,i,interval,column="ActiveEnergyBurned")
+            start_time = appData_p.loc[i,"date"] - pd.Timedelta(minutes=interval)
+            end_time = appData_p.loc[i,"date"]
+            health_subset = health_p[(health_p["start"] >= start_time) & (health_p["end"] <= end_time)] # NOTE: This part is expensive.
+            build_simple_interval_features(appData_p,health_subset,i,interval,column="HeartRate")
+            build_simple_interval_features(appData_p,health_subset,i,interval,column="ActiveEnergyBurned")
+            build_simple_interval_features(appData_p,health_subset,i,interval,column="AppleStandTime")
+            fit_ar1_process(appData_p,health_subset,i,interval,column="HeartRate")
+            fit_ar1_process(appData_p,health_subset,i,interval,column="ActiveEnergyBurned")
 
-    return appData
+    return appData_p
 
 def build_simple_interval_features(appData,health_subset,i,interval,column):
-    """Auxiliary function
+    """Auxiliary function for build_features.
     For each entry in the appData, get the mean, max, min, std, and range of the 'column' type of health data for the interval before the notification.
 
     Args:
@@ -126,7 +162,7 @@ def build_simple_interval_features(appData,health_subset,i,interval,column):
 
 
 def fit_ar1_process(appData,health_subset,i,interval,column):
-    """Auxiliary function
+    """Auxiliary function for build_features.
     For each entry in the appData, fit an AR1 process to the 'column' type of health data for the interval before the notification.
 
     Args:
