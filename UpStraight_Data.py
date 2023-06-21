@@ -2,7 +2,6 @@ import os
 
 from datetime import datetime, time
 import pandas as pd
-import numpy as np
 from tqdm import tqdm
 from apple_watch_data_package.Apple_Data import light_preprocess, fill_stand_time
 
@@ -12,21 +11,6 @@ state_mapping = {-1:"Unavailable",0:"Lying",1:"Sitting",2:"Standing",3:"Active"}
 posture_mapping = {-1:"Unavailable",0:"Straight",1:"Slouched"}
 
 feature_columns = ["AppleStandTime","ActiveEnergyBurned","HeartRate","DistanceWalkingRunning","StepCount"]
-training_columns = ['hour', 'HeartRate_15_mean',
-                    'HeartRate_15_max', 'HeartRate_15_min', 'HeartRate_15_std',
-                    'HeartRate_15_range', 'ActiveEnergyBurned_15_mean',
-                    'ActiveEnergyBurned_15_max', 'ActiveEnergyBurned_15_min',
-                    'ActiveEnergyBurned_15_std', 'ActiveEnergyBurned_15_range',
-                    'AppleStandTime_15_mean', 'AppleStandTime_15_max',
-                    'AppleStandTime_15_min', 'AppleStandTime_15_range',
-                    'HeartRate_15_ar1_coef', 'ActiveEnergyBurned_15_ar1_coef',
-                    'HeartRate_30_mean', 'HeartRate_30_max', 'HeartRate_30_min',
-                    'HeartRate_30_std', 'HeartRate_30_range', 'ActiveEnergyBurned_30_mean',
-                    'ActiveEnergyBurned_30_max', 'ActiveEnergyBurned_30_min',
-                    'ActiveEnergyBurned_30_std', 'ActiveEnergyBurned_30_range',
-                    'AppleStandTime_30_mean', 'AppleStandTime_30_max',
-                    'AppleStandTime_30_min', 'AppleStandTime_30_range',
-                    'HeartRate_30_ar1_coef', 'ActiveEnergyBurned_30_ar1_coef']
 
 
 def preprocess_appData(data_export):
