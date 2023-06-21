@@ -1,0 +1,9 @@
+## Information regarding files in data/ directory
+
+- export_***.csv: app event export for user
+- health_filtered_***.csv: health export for user, filtered for dates in which appevents are registered. The filtering was done by each user using code found in exporting_filter.
+
+- appData.csv: file of app events, joined for all users
+- health.csv: raw health exports, joined for all users (git ignored)
+
+- X_train.csv: processed file combining labelled app events from all users and corresponding features from respective users' health data
