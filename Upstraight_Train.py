@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+
+
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import confusion_matrix, make_scorer, accuracy_score
@@ -18,7 +23,7 @@ training_columns = ['hour', 'HeartRate_15_mean',
                     'ActiveEnergyBurned_30_std', 'ActiveEnergyBurned_30_range',
                     'AppleStandTime_30_mean', 'AppleStandTime_30_max',
                     'AppleStandTime_30_min', 'AppleStandTime_30_range',
-                    'HeartRate_30_ar1_coef', 'ActiveEnergyBurned_30_ar1_coef']#
+                    'HeartRate_30_ar1_coef', 'ActiveEnergyBurned_30_ar1_coef']
 
 def get_user_data(data, source="cr"):
     X_source = data.query("source==@source")
@@ -29,6 +34,17 @@ def get_user_data(data, source="cr"):
 
 
 def split_data(X,source="cr",test_size=0.2):
+    """DEPRECATED: Idea was to get training data based on all users, but only test data from one user. I did not proceed with this idea,
+    it was both buggy and in general a bad idea compared to the weighted approach.
+
+    Args:
+        X (_type_): _description_
+        source (str, optional): _description_. Defaults to "cr".
+        test_size (float, optional): _description_. Defaults to 0.2.
+
+    Returns:
+        _type_: _description_
+    """
     # split into source and non-source data:
     X_source = X[X["source"]==source]
     X_non_source = X[X["source"]!=source]
@@ -53,6 +69,16 @@ def split_data(X,source="cr",test_size=0.2):
     return X_train, X_source_test, y_train, y_source_test
 
 def get_n_splits(X,y, source="cr",**kwargs):
+    """DEPRECATED: see split_data. CV split generator according to same logic.
+
+    Args:
+        X (_type_): _description_
+        y (_type_): _description_
+        source (str, optional): _description_. Defaults to "cr".
+
+    Yields:
+        _type_: _description_
+    """
     # get source mask
     is_source = X["source"]==source
     
@@ -92,6 +118,33 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
     
     def transform(self,X,y=None):
         return X[self.columns]
+
+# function to train model for a single user using weighted training data
+def train_user_tree_cv(X_prep, source, target_weight=0.7,test_size=0.15):
+    """Function to train a RF model for a single user using weighted training data, using a GridSearchCV to find the best hyperparameters.
+
+    Args:
+        X_prep (df): Input file. The outcome variable must be saved in "posture".
+        source (str): user to train model for
+        target_weight (float, optional): the cumulative weight to be taken by user's data. Defaults to 0.7.
+        test_size (float, optional): size of CV test fold. Defaults to 0.15.
+
+    Returns:
+        _type_: _description_
+    """
+    y = X_prep["posture"]
+    X = X_prep.drop("posture",axis=1)
+    # map source to 1 if from source else 0
+    X["source"] = X["source"].map(lambda x: 1 if x==source else 0)
+    # Grid settings
+    param_grid = {"clf__max_depth": [3,4,5,7,9],"clf__n_estimators": [10,20,30,40,50]}
+    custom_cv = StratifiedShuffleSplit(n_splits=4,test_size=test_size,random_state=42)
+    # use source as additional variable in making splits to ensure that source data points are in each split
+    y_stratification = pd.concat([y,X["source"]],axis=1)
+    splits = custom_cv.split(X,y_stratification)
+    rf_grid = GridSearchCV(Pipeline([("col_selector",ColumnSelector(columns=training_columns)),("clf",RandomForestClassifier())]),param_grid=param_grid,cv=splits,verbose=1,n_jobs=-1)
+    rf_results = rf_grid.fit(X,y,clf__sample_weight= get_training_weights(X,target=target_weight))
+    return rf_results
     
 
 # create scoring function that considers score metric (e.g. accuracy) only of data points from source
