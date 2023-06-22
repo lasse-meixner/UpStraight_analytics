@@ -67,7 +67,7 @@ def get_health_data(path = "../data/", save = False):
         health.to_csv(path + "health.csv",index=False)
     return health
 
-def build_training_data(path = "../data/", save = False):
+def build_pre_processed_data(path = "../data/", save = False):
     """Stand alone function to build training data from the appData and health data from pairs of user files.
 
     Args:
@@ -89,7 +89,7 @@ def build_training_data(path = "../data/", save = False):
             X = build_features(appData,health) # get appData_p with features based on that persons health data
             X_train = pd.concat([X_train,X]) # combined all users
     if save:
-        X_train.to_csv(path + "X_train.csv",index=False)
+        X_train.to_csv(path + "pre_processed.csv",index=False)
     return X_train
 
 def build_features(appData_p,health_p):
@@ -123,7 +123,8 @@ def build_features(appData_p,health_p):
 
 def build_simple_interval_features(appData,health_subset,i,interval,column):
     """Auxiliary function for build_features.
-    For each entry in the appData, get the mean, max, min, std, and range of the 'column' type of health data for the interval before the notification.
+    i -> health_subset 
+    For each entry in the appData (i), get the mean, max, min, std, and range of the 'column' type of health data for the interval before the notification (health_subset).
 
     Args:
         appData (df): appData
