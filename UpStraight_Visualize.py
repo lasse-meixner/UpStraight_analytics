@@ -26,9 +26,8 @@ def plot_day(appData,health,column,entry):
     plt.title(column + " on " + str(day))
     plt.show()
 
-def plot_day_plotly(appData,health,column,entry):
+def plot_day_plotly(appData,health,column,day):
     """same as above but using plotly library"""
-    day = appData.groupby("day_date").count().sort_values("date",ascending=False).index[entry-1]
     health_day = health[health["day_date"]==day]
     appData_day = appData[appData["day_date"]==day].reset_index(drop=True)
 
@@ -36,7 +35,7 @@ def plot_day_plotly(appData,health,column,entry):
     
     # baseline plot with health data
     f = go.Figure()
-    f.add_trace(go.Scatter(x=ss.start,y=ss.value,mode="markers",name=column))
+    f.add_trace(go.Scatter(x=ss.start,y=ss.value,mode="markers"))
     
     # add vertical lines for appData and annotate
     for i in range(len(appData_day)):
@@ -46,4 +45,17 @@ def plot_day_plotly(appData,health,column,entry):
         f.add_annotation(x=appData_day.iloc[i].date,y=random.uniform(ss.value.min(),ss.value.max()),text=appData_day.iloc[i].state_string)
         
     f.update_layout(title=column + " on " + str(day))
+    return f
+
+def plot_day_prediction_plotly(prediction, day):
+    """plot prediction"""
+    # get selected day
+    prediction_day = prediction[prediction["date"].dt.date==day]
+    f = go.Figure()
+    # add a bar for proba
+    f.add_trace(go.Bar(x=prediction_day.date,y=prediction_day.proba, showlegend=False))
+    f.add_trace(go.Scatter(x=prediction_day.date,y=prediction_day.proba, mode="lines", showlegend=False))
+    # create green backgrounds for intervals of x where proba > 0.5
+    f.add_hline(y=0.5,line_width=2,line_dash="dash",line_color="green")
+    f.update_layout(title="Predicted slouching probabilities for 15 min intervals on " + str(day))
     return f
