@@ -3,6 +3,7 @@ import sys
 sys.path.append("../")
 import pandas as pd
 import click
+import joblib
 
 from UpStraight_Data import process_user_health, build_features
 from UpStraight_Train import training_columns
@@ -16,18 +17,27 @@ def build_pred_data(user, save = True):
     end = health_p["end"].max()
 
     pred = pd.DataFrame(pd.date_range(start=start, end=end, freq="15min"), columns=["date"])
+    date_col = pred["date"]
+
     # add hour column manually
     pred["hour"] = pred["date"].dt.hour
 
     # add features
-    pred = build_features(pred, health_p)[training_columns]
+    pred = build_features(pred, health_p)
+    pred = pred[training_columns].dropna()
+
+    # load user model
+    model = joblib.load(f"../models/{user}_model.pkl")
+
+    # predict
+    pred["pred"] = model.predict(pred)
+    pred["proba"] = model.predict_proba(pred)[:,1]
+
+    # add back date column
+    pred["date"] = date_col
     
     if save:
         pred.to_csv(f"../data/pred_{user}.csv", index=False)
-    
-    return pred
-
-
 
 if __name__ == "__main__":
     build_pred_data()
