@@ -23,7 +23,7 @@ def preprocess_appData(data_export):
     Returns:
         df: df
     """
-    data_export["date"] = pd.to_datetime(data_export["date"])
+    data_export["date"] = pd.to_datetime(data_export["date"]).dt.tz_localize(None)
     data_export["day_date"] = data_export["date"].dt.date
     data_export["day"] = data_export["date"].dt.day
     data_export["time"] = data_export["date"].dt.time
