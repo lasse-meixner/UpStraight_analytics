@@ -48,14 +48,15 @@ def plot_day_plotly(appData,health,column,day):
     return f
 
 def plot_day_prediction_plotly(prediction, day):
-    """plot prediction"""
+    # color map
+    color_map = {True: "green", False: "black"}
     # get selected day
-    prediction_day = prediction[prediction["date"].dt.date==day]
+    prediction_day = prediction[prediction["date"].dt.date==day].sort_values("date", ascending = False)
     f = go.Figure()
-    # add a bar for proba
-    f.add_trace(go.Bar(x=prediction_day.date,y=prediction_day.proba, showlegend=False))
+    # add a bar and line for proba
+    f.add_trace(go.Bar(x=prediction_day.date,y=prediction_day.proba, showlegend=False, width=200000, marker_color=prediction_day.train.map(color_map)))
     f.add_trace(go.Scatter(x=prediction_day.date,y=prediction_day.proba, mode="lines", showlegend=False))
-    # create green backgrounds for intervals of x where proba > 0.5
+    # add 0.5 hline
     f.add_hline(y=0.5,line_width=2,line_dash="dash",line_color="green")
     f.update_layout(title="Predicted slouching probabilities for 15 min intervals on " + str(day))
     return f
