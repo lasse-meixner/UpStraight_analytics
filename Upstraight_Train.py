@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from seaborn import heatmap as sns_heatmap
 
 
 from sklearn.model_selection import GridSearchCV
@@ -7,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.metrics import confusion_matrix, make_scorer, accuracy_score
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 
 training_columns = ['hour', 'HeartRate_15_mean',
                     'HeartRate_15_max', 'HeartRate_15_min', 'HeartRate_15_std',
@@ -26,6 +27,15 @@ training_columns = ['hour', 'HeartRate_15_mean',
                     'HeartRate_30_ar1_coef', 'ActiveEnergyBurned_30_ar1_coef']
 
 def get_user_data(data, source="cr"):
+    """Function to get X,y data for a single user from the full dataset.
+
+    Args:
+        data (df): data
+        source (str, optional): user string. Defaults to "cr".
+
+    Returns:
+        X, y: features, posture
+    """
     X_source = data.query("source==@source")
     
     y = X_source["posture"]
@@ -145,6 +155,16 @@ def train_user_tree_cv(X_prep, source, target_weight=0.7,test_size=0.15):
     rf_grid = GridSearchCV(Pipeline([("col_selector",ColumnSelector(columns=training_columns)),("clf",RandomForestClassifier())]),param_grid=param_grid,cv=splits,verbose=1,n_jobs=-1)
     rf_results = rf_grid.fit(X,y,clf__sample_weight= get_training_weights(X,target=target_weight))
     return rf_results
+
+
+
+def evaluate_model(model,data, user):
+    X_p, y_p = get_user_data(data,user)
+    preds = model.predict(X_p)
+    print(classification_report(y_p,preds))
+    fig = sns_heatmap(confusion_matrix(y_p,preds),annot=True, fmt = "d", cmap="Blues")
+    fig.set_title("Confusion Matrix for User {}".format(user))
+    return fig
     
 
 # create scoring function that considers score metric (e.g. accuracy) only of data points from source
