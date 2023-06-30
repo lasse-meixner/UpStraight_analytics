@@ -99,7 +99,7 @@ def build_training_data(path = "../data/", save = False):
             X = build_features(appData_p,health_p) # get appData_p with features based on that persons health data
             X_processed = pd.concat([X_processed,X]) # combined all users
     if save:
-        X_processed.to_csv(path + "pre_processed.csv",index=False)
+        X_processed.to_csv(path + "train.csv",index=False)
     return X_processed
 
 
