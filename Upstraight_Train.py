@@ -158,12 +158,12 @@ def train_user_tree_cv(X_prep, source, target_weight=0.7,test_size=0.15):
 
 
 
-def evaluate_model(model,data, user):
+def evaluate_model(model,data, user, title_addendum):
     X_p, y_p = get_user_data(data,user)
     preds = model.predict(X_p)
     print(classification_report(y_p,preds))
     fig = sns_heatmap(confusion_matrix(y_p,preds),annot=True, fmt = "d", cmap="Blues")
-    fig.set_title("Confusion Matrix for User {}".format(user))
+    fig.set_title("Confusion Matrix for user {}: {}".format(user,title_addendum))
     return fig
     
 
