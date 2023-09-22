@@ -1,4 +1,8 @@
-# Wrapper script to automate prediction file building process
+# Wrapper script to automate prediction file building process.
+# GOAL: This predicts for both a time grid as well as all time points in which the user entered data (training data).
+# REQUIRES: train.csv in data directory, and model.pkl in models directory
+
+
 import sys
 sys.path.append("../")
 import pandas as pd

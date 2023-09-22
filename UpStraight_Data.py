@@ -104,7 +104,7 @@ def build_training_data(path = "../data/", save = False):
 
 
 def build_features(appData_p,health_p):
-    """Auxiliary function to build features from appData and health data (of each user: _p) and add them as new columns to appData_p.
+    """Auxiliary function to build features using timestamps of appData and variables from health data (of each user: _p) and add them as new columns to appData_p.
 
     Args:
         appData_p (df): df of appData for one user
