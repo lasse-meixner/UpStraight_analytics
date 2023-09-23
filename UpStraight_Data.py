@@ -123,7 +123,7 @@ def build_features(appData_p,health_p):
             start_time = appData_p.loc[i,"date"] - pd.Timedelta(minutes=interval)
             end_time = appData_p.loc[i,"date"]
             mask = (health_p_i.index.get_level_values("start") >= start_time) & (health_p_i.index.get_level_values("end") <= end_time)
-            health_subset_p = health_p_i.loc[mask] # NOTE: This part is expensive.
+            health_subset_p = health_p_i.loc[mask] # NOTE: This part of selecting the right time window using the mask is expensive but necessary...
             if health_subset_p.shape[0] == 0:
                 continue
             build_simple_interval_features(appData_p,health_subset_p,i,interval,column="HeartRate")
