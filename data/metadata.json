@@ -1,0 +1,54 @@
+{
+    "metadata": {
+      "lass": {
+        "id": "lass",
+        "gender": "0",
+        "firstName": null,
+        "lastName": null,
+        "dateOfBirth": "1999-03-26 16:27:23 +0000",
+        "height": "189",
+        "weight": "82",
+        "activity": "2"
+      },
+      "far": {
+        "id": "far",
+        "gender": "0",
+        "firstName": null,
+        "lastName": null,
+        "dateOfBirth": "1965-09-22 16:27:23 +0000",
+        "height": "186",
+        "weight": "76",
+        "activity": "1"
+      },
+      "cr": {
+        "id": "cr",
+        "gender": "0",
+        "firstName": null,
+        "lastName": null,
+        "dateOfBirth": "2000-01-04 16:27:23 +0000",
+        "height": "181",
+        "weight": "71",
+        "activity": "1"
+      },
+      "as": {
+        "id": "as",
+        "gender": "0",
+        "firstName": null,
+        "lastName": null,
+        "dateOfBirth": "2000-04-26 16:27:23 +0000",
+        "height": "176",
+        "weight": "70",
+        "activity": "2"
+      },
+      "dotz": {
+        "id": "dotz",
+        "gender": "1",
+        "firstName": null,
+        "lastName": null,
+        "dateOfBirth": "2004-06-19 16:27:23 +0000",
+        "height": "165",
+        "weight": "57",
+        "activity": "2"
+      }
+    }
+  }
