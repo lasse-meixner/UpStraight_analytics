@@ -159,6 +159,7 @@ def train_user_tree_cv(X_prep, source, target_weight=0.7,test_size=0.15):
 
 
 def evaluate_model(model,data, user, title_addendum):
+    """assumes model has ColumnSelector for training_columns as preprocessing step"""
     X_p, y_p = get_user_data(data,user)
     preds = model.predict(X_p)
     print(classification_report(y_p,preds))
