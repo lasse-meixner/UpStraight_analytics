@@ -77,33 +77,8 @@ def load_health_data(path = "../data/", save = False):
     return health
 
 
-def build_training_data(path = "../data/", save = False):
-    """Stand alone function to build training data from the appData and health data from pairs of user files.
 
-    Args:
-        path (str, optional): path. Defaults to "../data/".
-        save (bool, optional): flag, whether to save to X_train.csv in local directory. Defaults to False.
-
-    Returns:
-        df: df
-    """
-    # for each user, loop over app data export, build feature from health, and combine
-    X_processed = pd.DataFrame()
-
-    for f in os.listdir(path):
-        if f.startswith("export_"):
-            user = f.split(".")[0].split("_")[1]
-            appData_p = preprocess_appData(pd.read_csv(f"{path}{f}").assign(source = user))
-            health_p = process_user_health(pd.read_csv(f"{path}health_filtered_{user}.csv"))
-
-            X = build_features(appData_p,health_p) # get appData_p with features based on that persons health data
-            X_processed = pd.concat([X_processed,X]) # combined all users
-    if save:
-        X_processed.to_csv(path + "train.csv",index=False)
-    return X_processed
-
-
-def build_features(appData_p,health_p):
+def build_dist_features(appData_p,health_p):
     """Auxiliary function to build features using timestamps of appData and variables from health data (of each user: _p) and add them as new columns to appData_p.
 
     Args:
@@ -133,6 +108,73 @@ def build_features(appData_p,health_p):
             build_ar1_features(appData_p,health_subset_p,i,interval,column="ActiveEnergyBurned")
 
     return appData_p
+
+
+def build_level_features(appData_p, health_p):
+    """It collects the last levels of each health feature. This is agnostic as to how long ago exactly each level is to the 
+    notification time, but it is asserted that they all fit within the last 40 minutes, otherwise they will all be NA.
+    There is probably a much smarter way to think about this, but I'll try this logic for now.
+
+    Args:
+        appData_p (_type_): _description_
+        health_p (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    nr_entries = {"HeartRate": 16, "ActiveEnergyBurned": 16, "AppleStandTime": 6}
+    for i in tqdm(range(len(appData_p))):
+        # get the closest health data entry before the notification
+        notification_time = appData_p.loc[i,"date"]
+        health_subset_p = health_p[health_p["start"] <= notification_time].sort_values(by="start")
+              
+        row_series = []
+        try:
+            for feature in nr_entries.keys():
+                last_entries = health_subset_p[health_subset_p["type"]==feature].tail(nr_entries[feature]).sort_values(by="start")
+                # add time elapsed since the first last entry instead +TODO:
+                elapsed_since_first_entry = notification_time - last_entries.iloc[0]["start"]
+                if elapsed_since_first_entry > pd.Timedelta(minutes=120): #NOTE: This is a bit arbitrary, and based on measurement frequency
+                    # set Series of NA values
+                    row = pd.Series(["overbound"]*len(last_entries), name = "levels").reset_index(drop=False)
+                else:
+                    row = pd.Series(last_entries["value"].values, name = "levels").reset_index(drop=False)
+                row["index"] = f"{feature}_" + row['index'].astype(str) # ensures uniqueness of index
+                row = row.set_index("index")
+                row_series.append(row)
+                        
+            row = pd.concat(row_series, axis=0)
+            appData_p.loc[i, row.index] = row["levels"]
+        except:
+            continue
+
+    return appData_p
+
+def build_training_data(path = "../data/", save = False, feature_building_function = build_dist_features):
+    """Stand alone function to build training data from the appData and health data from pairs of user files.
+
+    Args:
+        path (str, optional): path. Defaults to "../data/".
+        save (bool, optional): flag, whether to save to X_train.csv in local directory. Defaults to False.
+
+    Returns:
+        df: df
+    """
+    # for each user, loop over app data export, build feature from health, and combine
+    X_processed = pd.DataFrame()
+
+    for f in os.listdir(path):
+        if f.startswith("export_"):
+            user = f.split(".")[0].split("_")[1]
+            appData_p = preprocess_appData(pd.read_csv(f"{path}{f}").assign(source = user))
+            health_p = process_user_health(pd.read_csv(f"{path}health_filtered_{user}.csv"))
+
+            X = feature_building_function(appData_p,health_p) # get appData_p with features based on that persons health data
+            X_processed = pd.concat([X_processed,X]) # combined all users
+    if save:
+        X_processed.to_csv(path + "train.csv",index=False)
+    return X_processed
+
 
 
 def build_simple_interval_features(appData_p,health_subset_p,i,interval,column):
